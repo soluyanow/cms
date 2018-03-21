@@ -11,7 +11,7 @@
 		
 		//Установка свойств значений с помощью значений в массиве
 		public function __construct($data = array()) {
-			if (isset($data['id']) {
+			if (isset($data['id'])) {
 				$this->id = (int)$data['id'];				
 			}
 			
@@ -31,6 +31,7 @@
 				$this->content = $data['content'];
 			}
 		}
+		//////////////////////////////////////////////////////////////
 		
 		//Установка значений свойств с помщью значений формы
 		public function storeFormValues($params) {
@@ -43,7 +44,8 @@
 					$this->publicationDate = mktime(0, 0, 0, $m, $d, $y);
 				}
 			}			
-		}	
+		}
+        //////////////////////////////////////////////////////////////
 		
 		//Возвращает статьи по ID
 		public static function getById($id) {
@@ -56,13 +58,14 @@
 			$conn = null;
 			if ($row) {
 				return new Article($row);
-			}	
+			}
 		}
+        //////////////////////////////////////////////////////////////
 		
 		//Возвращает список статей
-		public static function getList($numRows = 10000000, $order = "publicationDate DESC") {
+		public static function getList($numRows = 1000, $order = "publicationDate DESC") {
 			$conn = PDO(DB_DSN, DB_USERNAME, DB_PASSWORD);
-			$sql = "SELECT SQL_CALC_FOUND_ROWS *, UNIX_TIMESTAMP(publicationDate) AS publicationDate FROM articles ORDER BY ".mysql_escape_string($order)." LIMIT :numRows";
+			$sql = "SELECT SQL_CALC_FOUND_ROWS *, UNIX_TIMESTAMP(publicationDate) AS publicationDate FROM articles ORDER BY ".$order." LIMIT :numRows";
 			$st = $conn->prepare($sql);
 			$st->bindValue(":numRows", $numRows, PDO::PARAM_INT);
 			$st->execute();
@@ -76,7 +79,8 @@
 			$conn = null;
 			return (array("results" => $list, "totalRows" => $totalRows[0]));
 		}
-		
+        //////////////////////////////////////////////////////////////
+
 		//Вставка в базу данных
 		public function insert() {
 			if (!is_null($this->id)) {
@@ -95,6 +99,38 @@
 			$this->id = $conn->lastInsertId();
 			$conn = null;			
 		}
+        //////////////////////////////////////////////////////////////
+
+        //Обновление статьи
+        public function update() {
+            if (is_null($this->id)) {
+                trigger_errror("Article::update(): Attempt to update an Article object that does not have its ID property set.", E_USER_ERROR );
+            }
+
+            $conn = new PDO(DB_DSN, DB_USERAME, DB_PASSWORD);
+            $sql = "UPDATE articles SET publicationDate=FROM_UNIXTIME(:publicationDate), title=:title, summary=:summary, content=:content WHERE id = :id";
+            $st = $conn->prepare ( $sql );
+            $st->bindValue( ":publicationDate", $this->publicationDate, PDO::PARAM_INT );
+            $st->bindValue( ":title", $this->title, PDO::PARAM_STR );
+            $st->bindValue( ":summary", $this->summary, PDO::PARAM_STR );
+            $st->bindValue( ":content", $this->content, PDO::PARAM_STR );
+            $st->bindValue( ":id", $this->id, PDO::PARAM_INT );
+            $st->execute();
+            $conn = null;
+        }
+        //////////////////////////////////////////////////////////////
+
+        //Удаление статьи
+        public function delete() {
+            if ( is_null( $this->id ) ) trigger_error ( "Article::delete(): Attempt to delete an Article object that does not have its ID property set.", E_USER_ERROR );
+
+            $conn = new PDO( DB_DSN, DB_USERNAME, DB_PASSWORD );
+            $st = $conn->prepare ( "DELETE FROM articles WHERE id = :id LIMIT 1" );
+            $st->bindValue( ":id", $this->id, PDO::PARAM_INT );
+            $st->execute();
+            $conn = null;
+        }
+        //////////////////////////////////////////////////////////////
 	}
 
 ?>
